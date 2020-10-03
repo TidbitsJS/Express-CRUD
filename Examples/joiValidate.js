@@ -48,7 +48,7 @@ app.post("/api/courses", (req, res) => {
   console.log(result);
 
   if (result.error) {
-    res.status(404).send(result.error.details[0].message);
+    res.status(400).send(result.error.details[0].message);
     return;
   }
 

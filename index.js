@@ -37,18 +37,10 @@ app.get("/api/courses", (req, res) => {
 });
 
 app.post("/api/courses", (req, res) => {
-  const schema = Joi.object({
-    name: Joi.string().min(3).required(),
-    category: Joi.string().min(5).required(),
-    certification: Joi.boolean().required(),
-    fee: Joi.number().required(),
-  });
+  const { error } = validateCourse(req.body);
 
-  const result = schema.validate(req.body);
-  console.log(result);
-
-  if (result.error) {
-    res.status(404).send(result.error.details[0].message);
+  if (error) {
+    res.status(400).send(error.details[0].message);
     return;
   }
 
@@ -64,12 +56,51 @@ app.post("/api/courses", (req, res) => {
   res.send(course);
 });
 
+app.put("/api/courses/:id", (req, res) => {
+  const course = courses.find((c) => c.id === parseInt(req.params.id));
+  if (!course) return res.status(404).send("Course Not Found!");
+
+  const { error } = validateCourse(req.body);
+  if (error) {
+    res.status(400).send(error.details[0].message);
+    return;
+  }
+
+  course.name = req.body.name;
+  course.category = req.body.category;
+  course.certification = req.body.certification;
+  course.fee = req.body.fee;
+
+  res.send(course);
+});
+
+app.delete("/api/courses/:id", (req, res) => {
+  const course = courses.find((c) => c.id === parseInt(req.params.id));
+  if (!course) return res.status(404).send("Course Not Found!");
+
+  const index = courses.indexOf(course);
+  courses.splice(index, 1);
+
+  res.send(course);
+});
+
 app.get("/api/courses/:id", (req, res) => {
   const course = courses.find((c) => c.id === parseInt(req.params.id));
 
-  if (!course) res.status(404).send("Course Not found!");
+  if (!course) return res.status(404).send("Course Not Found!");
   res.send(course);
 });
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Listening to port ${port} ....`));
+
+const validateCourse = (course) => {
+  const schema = Joi.object({
+    name: Joi.string().min(3).required(),
+    category: Joi.string().min(5).required(),
+    certification: Joi.boolean().required(),
+    fee: Joi.number().greater(0).required(),
+  });
+
+  return schema.validate(course);
+};
